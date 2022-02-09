@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-deployment-example # The name of the deployment goes here
+spec:
+  replicas: 1
+  selector: # The selector labels here must be a subset of the labels in the template to work properly.
+    matchLabels:
+      app: my-app-backend
+  template:
+    metadata:
+      labels:
+        app: my-app-backend
+    spec:
+      containers:
+      - name: redis-cache # This is the name of the container
+        image: mcr.microsoft.com/oss/bitnami/redis:6.0.8 # This is the target image
+        env: # env defines environment variables that are passed to the container
+        - name: ALLOW_EMPTY_PASSWORD
+          value: "yes"
+        ports: # ports defines what ports are exposed from a given container
+        - containerPort: 6379
+          name: redis
