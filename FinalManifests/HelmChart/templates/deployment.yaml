@@ -1,0 +1,27 @@
+{{- range $appName, $config := .Values.apps }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $appName }}
+spec:
+  replicas: {{ $config.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ $appName }}
+  template:
+    metadata:
+      labels:
+        app: {{ $appName }}
+    spec:
+      containers:
+      - name: webserver
+        image: {{ $config.image }}
+        env:
+        {{- range $key, $value := $config.env }}
+          - name: {{ $key }}
+            value: {{ $value | quote }}
+        {{- end }}
+        ports:
+        - containerPort: {{ $config.port }}
+---
+{{- end }}

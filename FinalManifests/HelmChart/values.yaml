@@ -1,0 +1,13 @@
+apps:
+  votefrontend:
+    image: mcr.microsoft.com/azuredocs/azure-vote-front:v1
+    replicaCount: 1
+    env:
+      REDIS: votebackend
+    port: 80
+  votebackend:
+    image: mcr.microsoft.com/oss/bitnami/redis:6.0.8
+    replicaCount: 1
+    env:
+      ALLOW_EMPTY_PASSWORD: yes
+    port: 6379

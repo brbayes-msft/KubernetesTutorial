@@ -70,7 +70,78 @@ After completing the manifest files, you should be able to deploy them using `ku
 As a final step after getting the code running, try upping the replica count on the frontend deployment, apply the changes, and then use the `kubectl get deployments` command to see the deployment progress.
 
 ## Create a Helm Chart
+Helm is an additional CLI that simplifies the process of deploying applications. It includes support for templating Kubernetes manifests.
 
+For learning more about Helm, you can visit the Helm Docs at https://helm.sh/docs/.
+
+For this part of the tutorial, we will take the deployment from the last section and convert it to a Helm template. There is a starter template in the `Templates/HelmChart` folder. In a helm chart, the folder structure goes something like this:
+
+ - Chart.yaml: A definition file for the chart overall, defining the name of the chart and its associated version.
+ - values.yaml: A variable file that is fed into the templates to generate the final templates. Variables can be submitted either by a values file (you can also combine multiple values files together) or as a command line parameter at the time of deployment.
+ - templates/: The folder that contains the templatized version of the manifests to be generated. New files can be added here as necessary to create new manifests.
+
+In the starter template, there is a list of applications with a single nginx app in it. The example will iterate over the list of applications, creating the appropriate manifests. To deploy the example as is, you can navigate to that folder from a terminal and then run the following command:
+
+``` bash
+helm upgrade --install -f values.yaml testservice . # testservice is the name of the Helm release. This is how Helm knows which resources to update when performing operations.
+
+helm upgrade --install testservice --set apps.webserver.replicaCount=3 -f values.yaml .
+
+kubectl get deployments
+
+kubectl port-forward deployment/webserver 8080:80
+
+helm uninstall testservice
+```
+
+The exercise for the remainder of this section is to take the voting app that was built in the last exercise, and create the appropriate Helm templates. The values file will need to be updated with each of the new apps that need to be deployed, and then a new template will need to be added to expose the deployments with a service.
+
+### Helm Syntax
+There are two main pieces of Helm syntax that you will need to know for this exercise. The first is referencing a variable from the values file. For that, you will use the below example, where myVarName is the name of the variable being referenced in the values file:
+
+``` yaml
+# Values file
+myVarName: Hello World
+
+# Template file
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.myVarName }}
+```
+
+The second important piece of syntax is that of range. Range allows for iteration over an array or dictionary in helm. For example:
+
+``` yaml
+# Values file
+apps:
+  myApp:
+    port: 80
+
+# Template file
+{{- range $appName, $config := .Values.apps }} # $appName is the name of the key in a dictionary, and $config is the value in the dictionary.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $appName }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ $config.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app: {{ $appName }}
+---
+{{- end }} # This end syntax is necessary when using multi-line Helm tags.
+```
+
+For testing purposes, it can often be useful to see the rendered manifests before actually deploying them. For that, you can use the `--dry-run` flag with Helm, and the manifests will be generated without actually deploying anything to the cluster.
+
+``` bash
+helm upgrade --install -f values.yaml testservice --dry-run .
+```
 
 ## WordPress with Helm (Optional)
 This is an optional exercise that walks through pulling a chart from a public source to run WordPress on Kubernetes.
